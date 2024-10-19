@@ -1,5 +1,5 @@
 default:
-	# write command to test your files (you do not need it for your submissions)
+	g++ -std=c++11 -o main.out main.cpp
 
 clean:
 	rm *.out
