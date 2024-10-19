@@ -1,129 +1,164 @@
 #include <iostream>
+#include <vector>
+using namespace std;
 
 class HashTable {
 private:
-    int* table;
-    int size;
-    int count;
-    int EMPTY = -1;
-    int DELETED = -2;
-
-    int nextPrime(int n) {
-        while (!isPrime(n)) {
-            ++n;
-        }
-        return n;
-    }
-
-    bool isPrime(int n) {
-        if (n < 2) return false;
-        for (int i = 2; i * i <= n; ++i) {
-            if (n % i == 0) return false;
-        }
-        return true;
-    }
-
-    int hash(int key) {
-        return key % size;
-    }
-
-    int quadraticProbing(int key, int i) {
-        return (hash(key) + i * i) % size;
-    }
-
-    void resize() {
-        int oldSize = size;
-        size = nextPrime(size * 2);  // resize to next prime for optimal probing
-        int* oldTable = table;
-        table = new int[size];
-        for (int i = 0; i < size; ++i) table[i] = EMPTY;
-        count = 0;
-
-        // Rehash all elements from old table to the new table
-        for (int i = 0; i < oldSize; ++i) {
-            if (oldTable[i] != EMPTY && oldTable[i] != DELETED) {
-                insert(oldTable[i]);
-            }
-        }
-        delete[] oldTable;
-    }
-
-    double loadFactor() {
-        return (double)count / size;
-    }
+    int bucketCount; // number of buckets
+    int elementCount; // current number of elements
+    int* table; // array for storing key-value pairs
 
 public:
     HashTable(int initialSize) {
-        size = nextPrime(initialSize);
-        table = new int[size];
-        for (int i = 0; i < size; ++i) table[i] = EMPTY;
-        count = 0;
+        bucketCount = initialSize; 
+        elementCount = 0; 
+        table = new int[bucketCount]; 
+        fill_n(table, bucketCount, -1);
     }
 
-    ~HashTable() {
-        delete[] table;
-    }
+    // Resize table
+    void resize() {
+        int newBucketCount = nextPrime(2 * bucketCount); 
+        int* newTable = new int[newBucketCount]; 
+        fill_n(newTable, newBucketCount, -1); 
 
-    void insert(int key) {
-        if (search(key) != -1) {
-            std::cout << "Duplicate key insertion is not allowed" << std::endl;
-            return;
+        for (int i = 0; i < bucketCount; i++) {
+            if (table[i] != -1) {
+                int key = table[i];
+                int newIndex = key % newBucketCount;
+
+                if (newTable[newIndex] == -1) {
+                    newTable[newIndex] = key; 
+                } else {
+                    for (int j = 1; j < newBucketCount; j++) {
+                        int newIndexProbing = (newIndex + j * j) % newBucketCount;
+
+                        if (newTable[newIndexProbing] == -1) {
+                            newTable[newIndexProbing] = key; 
+                            break; 
+                        }
+                    }
+                }
+            }
         }
 
-        // Resize if load factor exceeds threshold
-        if (loadFactor() > 0.8) {
+        delete[] table; 
+        table = newTable; 
+        bucketCount = newBucketCount; 
+    }
+
+    // Print table
+    void printTable() {
+        for (int i = 0; i < bucketCount; i++) {
+            cout << (table[i] == -1 ? "- " : to_string(table[i]) + " ");
+        }
+        cout << endl; 
+    }
+
+    // Remove key
+    void remove(int key) {
+        int index = key % bucketCount;
+
+        if (table[index] == key) {
+            table[index] = -1; 
+            elementCount--; 
+            return; 
+        } else {
+            int originalIndex = index; 
+
+            for (int i = 1; (index + i * i) % bucketCount != originalIndex; i++) {
+                int newIndex = (index + i * i) % bucketCount;
+
+                if (table[newIndex] == key) {
+                    table[newIndex] = -1; 
+                    elementCount--; 
+                    return; 
+                }
+            }
+        }
+        cout << "Element not found" << endl; 
+    }
+
+    // Search key
+    int search(int key) {
+        int index = key % bucketCount;
+
+        if (table[index] == key) {
+            return index; 
+        } else {
+            for (int i = 1; (index + i * i) % bucketCount != index; i++) {
+                int newIndex = (index + i * i) % bucketCount;
+
+                if (table[newIndex] == -1) {
+                    return -1; 
+                }
+
+                if (table[newIndex] == key) {
+                    return newIndex; 
+                }
+            }
+        }
+        return -1; 
+    }
+
+    // Insert key
+    void insert(int key) {
+        float loadFactor = static_cast<float>(elementCount) / bucketCount;
+
+        if (loadFactor >= 0.8) {
             resize();
         }
 
-        int i = 0;
-        int index;
-        while (i < size / 2) {  // Limiting to (m + 1) / 2 unique indices
-            index = quadraticProbing(key, i);
-            if (table[index] == EMPTY || table[index] == DELETED) {
-                table[index] = key;
-                count++;
-                return;
-            }
-            i++;
+        int index = key % bucketCount;
+
+        if (table[index] == key) {
+            cout << "Duplicate key insertion is not allowed" << endl; 
+            return; 
         }
 
-        std::cout << "Max probing limit reached!" << std::endl;
-    }
-
-    int search(int key) {
-        int i = 0;
-        int index;
-        while (i < size / 2) {  // Limiting to (m + 1) / 2 unique indices
-            index = quadraticProbing(key, i);
-            if (table[index] == EMPTY) {
-                return -1;
-            }
-            if (table[index] == key) {
-                return index;
-            }
-            i++;
-        }
-        return -1;
-    }
-
-    void remove(int key) {
-        int index = search(key);
-        if (index == -1) {
-            std::cout << "Element not found" << std::endl;
+        if (table[index] == -1) { 
+            table[index] = key; 
+            elementCount++; 
+            return; 
         } else {
-            table[index] = DELETED;
-            count--;
-        }
-    }
+            for (int i = 1; i < bucketCount; i++) {
+                int newIndex = (index + i * i) % bucketCount;
 
-    void printTable() {
-        for (int i = 0; i < size; ++i) {
-            if (table[i] == EMPTY || table[i] == DELETED) {
-                std::cout << "- ";
-            } else {
-                std::cout << table[i] << " ";
+                if (table[newIndex] == key) {
+                    cout << "Duplicate key insertion is not allowed" << endl; 
+                    return; 
+                }
+
+                if (table[newIndex] == -1) {
+                    table[newIndex] = key; 
+                    elementCount++; 
+                    return; 
+                }
             }
         }
-        std::cout << std::endl;
+
+        cout << "Max probing limit reached!" << endl; 
+    }
+
+    // Prime checking
+    bool isPrime(int num) {
+        if (num <= 1) return false; 
+        if (num == 2 || num == 3) return true; 
+        if (num % 2 == 0 || num % 3 == 0) return false; 
+
+        for (int i = 5; i * i <= num; i += 6) {
+            if (num % i == 0 || num % (i + 2) == 0) return false; 
+        }
+        return true; 
+    }
+
+    // Next prime
+    int nextPrime(int n) {
+        int candidate = n; 
+
+        while (!isPrime(candidate)) {
+            candidate++; 
+        }
+        return candidate; 
     }
 };
