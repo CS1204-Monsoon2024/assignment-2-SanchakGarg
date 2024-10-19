@@ -11,6 +11,7 @@ private:
     int nextPrime(int n) {
         while (!isPrime(n)) {
             ++n;
+        }
         return n;
     }
 
@@ -49,7 +50,7 @@ private:
     double loadFactor() {
         return (double)count / size;
     }
-    
+
 public:
     HashTable(int initialSize) {
         size = nextPrime(initialSize);
