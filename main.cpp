@@ -5,8 +5,8 @@ private:
     int* table;
     int size;
     int count;
-    const int EMPTY = -1;
-    const int DELETED = -2;
+    int EMPTY = -1;
+    int DELETED = -2;
 
     int nextPrime(int n) {
         while (!isPrime(n)) {
