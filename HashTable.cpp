@@ -5,8 +5,8 @@ private:
     int* table;    // The array representing the hash table
     int size;      // The size of the hash table
     int count;     // Number of elements currently in the table
-    const int EMPTY = -1;   // Indicates an empty cell
-    const int DELETED = -2; // Indicates a deleted cell
+    int EMPTY = -1;   // Indicates an empty cell
+    int DELETED = -2; // Indicates a deleted cell
 
     // Helper function to find the next prime number greater than or equal to n
     int nextPrime(int n) {
